@@ -1,0 +1,7 @@
+# Download do IBGE (refeito automaticamente pelo mapa_municipio_estacao.py)
+dados/_cache_ibge/
+
+# Parquets do SICOR cruzados com o clima (arquivos grandes)
+dados/sicor_com_clima/
+
+__pycache__/
