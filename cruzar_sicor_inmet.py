@@ -37,7 +37,7 @@ PASTA_SICOR = (
 # 🟢 Arquivo de clima processado do INMET
 CAMINHO_CLIMA = (
     r"C:\Users\User\Downloads"
-    r"\Cópia de clima_processado_BRASIL_2019_2025_desvio_climatologico.csv"
+    r"\clima_processado_BRASIL_2019_2025_desvio_climatologico.csv"
 )
 
 # 🟢 PASTA DE SAÍDA: Parquets do SICOR já com as colunas climáticas
@@ -48,15 +48,11 @@ PASTA_SAIDA = PASTA_PROJETO / "dados" / "sicor_com_clima"
 # ==============================================================================
 COLUNA_MUNICIPIO = "CD_IBGE_MUNICIPIO"
 COLUNA_DATA = "DT_EMISSAO"
-COLUNAS_CLIMA = ["PRECIP_90D", "DESVIO_%", "VERANICOS_90D"]
+COLUNAS_CLIMA = ["PRECIP_90D", "MEDIA_90D_HIST", "DESVIO_%", "VERANICOS_90D"]
 
 # Usa o clima do dia ANTERIOR à emissão: o modelo só pode enxergar o que já
 # tinha acontecido antes da assinatura do contrato (evita data leakage).
 DEFASAGEM_DIAS = 1
-
-# As janelas de 90 dias só estão completas a partir do 90º dia de cada estação.
-# Antes disso o PRECIP_90D é um acumulado parcial e não deve ser usado.
-DIAS_MINIMOS_HISTORICO = 90
 
 
 # ==============================================================================
@@ -76,12 +72,18 @@ def carregar_mapa(caminho) -> pl.DataFrame:
 
 def carregar_clima(caminho) -> pl.DataFrame:
     """Lê só as colunas necessárias e mantém apenas os dias com dado utilizável."""
-    tipos = {"COD_ESTACAO": pl.Utf8, "DATA": pl.Date}
+    tipos = {"COD_ESTACAO": pl.Utf8, "MUNICIPIO": pl.Utf8, "UF": pl.Utf8, "DATA": pl.Date}
     tipos.update({coluna: pl.Float64 for coluna in COLUNAS_CLIMA})
 
     clima = (
         pl.scan_csv(caminho, separator=";", decimal_comma=True, schema_overrides=tipos)
-        .select("COD_ESTACAO", "DATA", *COLUNAS_CLIMA)
+        .select(
+            "COD_ESTACAO",
+            "DATA",
+            pl.col("MUNICIPIO").alias("MUNICIPIO_ESTACAO"),
+            pl.col("UF").alias("UF_ESTACAO"),
+            *COLUNAS_CLIMA,
+        )
         .collect()
     )
     total = clima.height
@@ -89,16 +91,11 @@ def carregar_clima(caminho) -> pl.DataFrame:
     if clima.select("COD_ESTACAO", "DATA").is_duplicated().any():
         raise ValueError("❌ O arquivo de clima tem linhas repetidas para a mesma estação e data.")
 
-    clima = (
-        clima.with_columns(pl.col("DATA").min().over("COD_ESTACAO").alias("_INICIO"))
-        .filter(
-            (pl.col("DATA") >= pl.col("_INICIO") + pl.duration(days=DIAS_MINIMOS_HISTORICO - 1))
-            & pl.col("PRECIP_90D").is_not_null()
-        )
-        .drop("_INICIO")
-    )
+    # O pipeline do INMET deixa o PRECIP_90D nulo quando a estação tem poucas
+    # leituras na janela de 90 dias; nesses dias vale a estação reserva.
+    clima = clima.filter(pl.col("PRECIP_90D").is_not_null())
     print(f"🌦️ Clima: {clima.height:,} dias-estação utilizáveis "
-          f"({total - clima.height:,} descartados por janela de 90 dias incompleta)")
+          f"({total - clima.height:,} sem PRECIP_90D)")
     return clima
 
 
@@ -147,6 +144,8 @@ def cruzar_arquivo(caminho_entrada: str, caminho_saida: str,
         .with_columns(
             pl.when(pl.col("QUALIDADE_ESTACAO").is_not_null())
             .then(pl.col("QUALIDADE_ESTACAO"))
+            .when(pl.col("_MUN").is_null())
+            .then(pl.lit("SEM_MUNICIPIO"))
             .when(pl.col("_COBERTO"))
             .then(pl.lit("SEM_DADO_NA_DATA"))
             .otherwise(pl.lit("SEM_COBERTURA"))
@@ -196,7 +195,7 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("📋 QUALIDADE DO CRUZAMENTO (operações do SICOR)")
     print("=" * 60)
-    for flag in ["EXCELENTE", "BOA", "REGULAR", "SEM_DADO_NA_DATA", "SEM_COBERTURA"]:
+    for flag in ["EXCELENTE", "BOA", "REGULAR", "SEM_DADO_NA_DATA", "SEM_COBERTURA", "SEM_MUNICIPIO"]:
         qtd = total.filter(pl.col("QUALIDADE_ESTACAO") == flag)["OPERACOES"].sum()
         print(f"   {flag:<17} {qtd:>12,} ({qtd / total_operacoes:.1%})")
     print(f"\n📦 Arquivos cruzados salvos em: {args.saida}")

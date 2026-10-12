@@ -34,7 +34,7 @@ CAMINHO_CATALOGO_ESTACOES = (
 # 🟢 Arquivo de clima processado (só a coluna COD_ESTACAO é lida aqui)
 CAMINHO_CLIMA = (
     r"C:\Users\User\Downloads"
-    r"\Cópia de clima_processado_BRASIL_2019_2025_desvio_climatologico.csv"
+    r"\clima_processado_BRASIL_2019_2025_desvio_climatologico.csv"
 )
 
 # 🟢 Localidades 2022 do IBGE (Brasil inteiro). É a mesma base dos arquivos .kml
