@@ -1,0 +1,47 @@
+{
+  "operacoes": 5000,
+  "taxa_inadimplencia": 0.05,
+  "semente": 42,
+  "pesos_risco": {
+    "JUROS": 0.3,
+    "CREDITO_POR_HECTARE": 0.2,
+    "DEFICIT_CHUVA": 0.3,
+    "VERANICOS": 0.2
+  },
+  "desvio_ruido": 0.1,
+  "cenarios": {
+    "BASELINE": [
+      "VL_JUROS",
+      "VL_AREA_FINANC",
+      "VL_PARC_CREDITO",
+      "CD_ESTADO",
+      "CD_IBGE_MUNICIPIO"
+    ],
+    "APRIMORADA": [
+      "VL_JUROS",
+      "VL_AREA_FINANC",
+      "VL_PARC_CREDITO",
+      "CD_ESTADO",
+      "CD_IBGE_MUNICIPIO",
+      "PRECIP_90D",
+      "DESVIO_%",
+      "VERANICOS_90D"
+    ]
+  },
+  "melhores_parametros": {
+    "BASELINE": {
+      "rf__class_weight": "balanced_subsample",
+      "rf__max_depth": 16,
+      "rf__max_features": "sqrt",
+      "rf__min_samples_leaf": 5,
+      "rf__n_estimators": 300
+    },
+    "APRIMORADA": {
+      "rf__class_weight": "balanced_subsample",
+      "rf__max_depth": null,
+      "rf__max_features": "sqrt",
+      "rf__min_samples_leaf": 5,
+      "rf__n_estimators": 300
+    }
+  }
+}

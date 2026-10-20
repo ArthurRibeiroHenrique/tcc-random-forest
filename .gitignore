@@ -5,3 +5,9 @@ dados/_cache_ibge/
 dados/sicor_com_clima/
 
 __pycache__/
+
+# Dados brutos e intermediários do SICOR (etapas de preparacao_sicor/)
+dados/sicor/
+
+# Modelos treinados (refeitos pelo random_forest.py)
+resultados/random_forest/*.joblib

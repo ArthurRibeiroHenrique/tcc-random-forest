@@ -1,0 +1,7 @@
+﻿FAIXA;OPERACOES;INADIMPLENTES;CENARIO
+Aprovação imediata (<30%);757;16;BASELINE
+Análise humana (30% a 65%);190;23;BASELINE
+Reprovação defensiva (>65%);53;11;BASELINE
+Aprovação imediata (<30%);839;11;APRIMORADA
+Análise humana (30% a 65%);115;20;APRIMORADA
+Reprovação defensiva (>65%);46;19;APRIMORADA
